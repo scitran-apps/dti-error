@@ -12,7 +12,8 @@ function err = dtiError(dtiInitZip,parametersJSON)
 %   chdir(fullfile(dtiErrorRootPath,'local'))
 %   
 st = scitran('action', 'create', 'instance', 'scitran');
-
+% 
+%
 %% List all projects
 
 % In this example, we use the structure 'srch' to store the search parameters.
