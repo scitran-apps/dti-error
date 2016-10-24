@@ -77,8 +77,44 @@ d = dir(fullfile(baseDir,'*b0*.nii.gz'));
 b0Name = fullfile(baseDir,d.name);
 exist(b0Name,'file')
 
+%% Check the alignment of different files
+
+% It looks to me that these three b0 data sets differ a bit
+% The first one is not even the same size.
+
+% b=0 in the base directory
 b0 = niftiRead(b0Name);
 niftiView(b0);
+dim = niftiGet(b0,'dim');
+niftiView(b0,'slice',dim(3)/2);
+
+% These two are the same size.
+% But they differ in detail
+
+% The b=0 data in the dti31trilin directory
+b0TriName = fullfile(baseDir,'dti31trilin','bin','b0.nii.gz');
+exist(b0TriName,'file')
+b0Tri = niftiRead(b0TriName);
+niftiView(b0Tri,'slice',round(dim(3)/3));
+
+% The b=0 volume in the dwi file
+dim = niftiGet(dwi.nifti,'dim');
+niftiView(dwi.nifti,'slice',round(dim(3)/3));
+
+% So, I am thinking that the trilin/bin b=0 is in the same coordinate frame
+% as the dwi.nifti data in the root directory with '_aligned_trilin' in the
+% title.
+% If this is so, then we can use the trilin/bin b0 and the bvecs, bvals and
+% dwi.nifti and tensors.nii.gz data.
+
+% Plus, the tensor.nii.gz seems to match, too. Yippee!
+tensorsName = fullfile(baseDir,'dti31trilin','bin','tensors.nii.gz');
+exist(tensorsName,'file')
+tensors = niftiRead(tensorsName);
+d = tensors.data;
+tensors.data = abs(squeeze(d(:,:,:,1,:)));
+niftiView(tensors,'slice',round(dim(3)/3));
+
 
 %% Read the tensors
 
