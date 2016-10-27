@@ -31,12 +31,12 @@ function err = dtiError(baseName,varargin)
 %    baseDir = fullfile(dtiErrorRootPath,'local',dirName);
 %    d = dir(fullfile(baseDir,'*aligned*.nii.gz'));
 %    baseName = fullfile(baseDir,d.name);
-%    % [X Y Z] = meshgrid(40:42, 40:42, 40:42);
-%    [X Y Z] = meshgrid(41, 41, 41); coords = [X(:) Y(:) Z(:)];
+%    % [X Y Z] = meshgrid(40:41, 40:41, 40:41);
+%    [X Y Z] = meshgrid(40, 40, 40); coords = [X(:) Y(:) Z(:)];
 %
 %    err = dtiError(baseName,'coords',coords);
-%    mrvNewGraphWin; hist(err);
-%    xlabel('\Delta ADC'); ylabel('Count')
+%    mrvNewGraphWin; 
+%    hist(err); xlabel('\Delta ADC'); ylabel('Count')
 %
 % LMP/BW Vistalab Team, 2016
 
@@ -72,23 +72,24 @@ end
 switch eType
     case 'adc'
         % These are the ADC data from the signals in the dwi nifti file
-        ADC = dwiGet(dwi,'adc data image',coords);
+        adc = dwiGet(dwi,'adc data image',coords);
         
-        % These are the tensors to predict the ADC data
+        % These are the tensors to predict the ADC data coords
+        % It is possible to return the predicted ADC from dwiQ, as well,
+        % by a small adjustment to that function.
         Q = dwiQ(dwi,coords);
+
+        % Instead, we separately calculate the predicted ADC values
+        bvecs = dwiGet(dwi,'diffusion bvecs');
+        adcPredicted = dtiADC(Q,bvecs);
         
-        % No plot is produced, just the data are returned
-        % To produce a plot, do not return uData.  Or fix the code!
-        % Or maybe there should be a dwiGet version of this?
-        %
-        %   dwiGet(dwi,'adc estimate',coords);
-        %
-        uData = dwiPlot(dwi,'adc',ADC,Q);
+        % A visualization, if you like
+        % dwiPlot(dwi,'adc',adc(:,1),squeeze(Q(:,:,1)));
         % mrvNewGraphWin;
         % plot(ADC(:),uData.adcPredicted(:),'o')
         % identityLine(gca);
         
-        err = ADC(:) - uData.adcPredicted(:);
+        err = adc(:) - adcPredicted(:);
     otherwise
         error('Unknown error type %s\n',eType);
 end
