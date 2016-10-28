@@ -39,13 +39,15 @@ function err = dtiError(baseName,varargin)
 %    % [X Y Z] = meshgrid(40:45, 40:45, 40:45);
 %    [X Y Z] = meshgrid(40, 40, 40); coords = [X(:) Y(:) Z(:)];
 %
-%    err = dtiError(baseName,'coords',coords);
+%    err = dtiError(baseName,'coords',coords,'eType','adc');
 %    mrvNewGraphWin; 
 %    hist(err,50); xlabel('\Delta ADC'); ylabel('Count')
+%    fprintf('DWI image quality %.2f (ADC-DTI eval method)\n',1/std(err));
 %
 %    err = dtiError(baseName,'coords',coords,'eType','dsig');
 %    mrvNewGraphWin; 
 %    hist(err,50); xlabel('\Delta DSIG'); ylabel('Count')
+%    fprintf('DWI image quality %.2f (DSIG-DTI eval method)\n',1/std(err));
 %
 %    bmask = fullfile(baseDir,'dti31trilin','bin','brainMask.nii.gz');
 %    err = dtiError(baseName,'brainMask',bmask,'eType','adc');
@@ -103,10 +105,7 @@ end
 %% ADC or dSig from the coordinates and evaluate the tensor
 
 % We need 
-%   * a dsig error type implemented
 %   * a way to generate coords through the brain mask
-%   * a fix to the code in dwiGet, I think, that receives multiple coors
-%   
 switch eType
     case 'adc'
         % These are the ADC data from the signals in the dwi nifti file
@@ -122,12 +121,12 @@ switch eType
         adcPredicted = dtiADC(Q,bvecs);
         
         % A visualization, if you like
-        % dwiPlot(dwi,'adc',adc(:,1),squeeze(Q(:,:,1)));
+        % dwiPlot(dwi,'adc',adc(:,5),squeeze(Q(:,:,5)));
         % mrvNewGraphWin;
-        % plot(ADC(:),uData.adcPredicted(:),'o')
-        % identityLine(gca);
-        
+        % plot(adc(:),adcPredicted(:),'o')
+        % identityLine(gca); axis equal
         err = adc(:) - adcPredicted(:);
+        
     case 'dsig'
         
         % These are the ADC data from the signals in the dwi nifti file
@@ -145,10 +144,9 @@ switch eType
         S0 = dwiGet(dwi,'b0valsimage',coords);
         dsigPredicted = dwiComputeSignal(S0, bvecs, bvals, Q);
         dsigPredicted = dsigPredicted';
-        
+
+        % We could use percentage error by dividing by dsig().
         err = dsig(:) - dsigPredicted(:);
-        % Percent error
-        % pErr = err ./ dsig(:);
         
     otherwise
         error('Unknown error type %s\n',eType);
