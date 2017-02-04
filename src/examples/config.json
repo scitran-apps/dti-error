@@ -1,0 +1,7 @@
+{
+  "config": {
+    "error_type": "all",
+    "ncoords": 150,
+    "wm_prob": true
+  }
+}

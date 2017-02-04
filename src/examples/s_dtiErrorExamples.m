@@ -54,7 +54,7 @@ adcPredicted = dtiADC(Q,bvecs);
 dwiPlot(dwi,'adc',adc(:,5),squeeze(Q(:,:,5)));
 saveas(gcf, fullfile(mrvDirup(baseDir),'adc_observed_predicted_surface.png'));
 
-% Plot points
+% Plot points 
 mrvNewGraphWin;
 plot(adc(:),adcPredicted(:),'o')
 xlabel('ADC Observed') 
@@ -75,3 +75,4 @@ title(sprintf('DWI image quality %.2f (DSIG-DTI eval method, higher better)\n',1
 saveas(gcf, fullfile(mrvDirup(baseDir),'wmprob_dsig_250coords.png'));
 
 %%
+
