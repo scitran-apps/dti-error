@@ -1,4 +1,4 @@
-function [err, dwi, coords] = dtiError(baseName,varargin)
+function [err, dwi, coords, predicted, measured] = dtiError(baseName,varargin)
 % Find RMSE between the measured and ADC (or dSIG) based on tensor model
 %
 %      [err, dwi, coords] = dtiError(baseName,'coords',coords)
@@ -140,6 +140,8 @@ switch eType
         % pixels.
         lst = ~isnan(adc);
         err = adc(lst) - adcPredicted(lst);
+        measured = adc(lst);
+        predicted = adcPredicted(lst);
 
     case 'dsig'
         % Analyze the diffusion signals in the dwi nifti file
@@ -169,6 +171,8 @@ switch eType
         
         % We could use percentage error by dividing by dsig().
         err = dsig(:) - dsigPredicted(:);
+        measured = dsig(:);
+        predicted = dsigPredicted(:);
         
     otherwise
         error('Unknown error type %s\n',eType);
