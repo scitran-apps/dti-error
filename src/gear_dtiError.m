@@ -63,8 +63,8 @@ for ii = 1:numel(eType)
     % Histogram
     mrvNewGraphWin;
     hist(err,50); xlabel(['\Delta ', upper(eType{ii})]); ylabel('Voxel Count')
-    fprintf('DWI image quality (1/std(err)) = %.2f (%s-DTI method (Higher number is better))\n', 1/std(err), upper(eType{ii}));
-    title(sprintf('DWI image quality (1/std(err)) = %.2f (%s-DTI method (Higher number is better))\n', 1/std(err), upper(eType{ii})));
+    fprintf('%s: DWI image quality (1/std(err)) = %.2f \n', upper(eType{ii}), 1/std(err));
+    title(sprintf('%s: DWI image quality (1/std(err)) = %.2f \n', upper(eType{ii}), 1/std(err)));
     saveas(gcf, fullfile(output_directory, [eType{ii}, '_', num2str(ncoords), '_err.png']));
     
     % Scatter with id/line
