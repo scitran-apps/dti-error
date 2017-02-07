@@ -1,4 +1,7 @@
 # scitran/dti-error
+[![Docker Pulls](https://img.shields.io/docker/pulls/scitran/dti-error.svg)](https://hub.docker.com/r/scitran/dti-error/)
+[![Docker Stars](https://img.shields.io/docker/stars/scitran/dti-error.svg)](https://hub.docker.com/r/scitran/dti-error/)
+
 Calculate RMSE between the measured signal and the ADC (or dSIG) based on tensor model fit provided by [dtiInit](https://github.com/scitran-apps/dtiinit).
 
 This gear calculates the histogram of differences between DTI based predictions (ADC or dSig) with the actual ADC or dSig data. Larger deviations suggest noisier data. This is one of a series of methods we are developing to assess the reliability of diffusion weighted image data.
