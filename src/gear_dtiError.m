@@ -15,8 +15,13 @@ function gear_dtiError(input_directory, output_directory, error_type, ncoords, w
 %     gear_dtiError(input_directory, output_directory, error_type, ncoords, wm_prob)
 %
 % EXAMPLE COMPILATION:
-%     mcc -m gear_dtiError.m -I ~/Code/vistasoft
+%     git clone https://github.com/scitran-apps/dti-error
+%     git clone https://github.com/vistalab/vistasoft
 %
+%     In Matlab (e.g., r2015b):
+%       mcc -m dti-error/src/gear_dtiError.m -I vistasoft -I dti-error/src
+%
+
 
 disp('Alive...');
 
@@ -57,16 +62,16 @@ for ii = 1:numel(eType)
     else
         [err, dwi, coords, measured, predicted] = dtiError(diffusion_nifti, 'eType',  eType{ii}, 'ncoords', ncoords);
     end
-    
+
     % PLOTS
-    
+
     % Histogram
     mrvNewGraphWin;
     hist(err,50); xlabel(['\Delta ', upper(eType{ii})]); ylabel('Voxel Count')
     fprintf('%s: DWI image quality (1/std(err)) = %.2f \n', upper(eType{ii}), 1/std(err));
     title(sprintf('%s: DWI image quality (1/std(err)) = %.2f \n', upper(eType{ii}), 1/std(err)));
     saveas(gcf, fullfile(output_directory, [eType{ii}, '_', num2str(ncoords), '_err.png']));
-    
+
     % Scatter with id/line
     plot(measured, predicted,'o')
     xlabel([upper(eType{ii}), ' Measured'])
@@ -74,18 +79,18 @@ for ii = 1:numel(eType)
     title([upper(eType{ii}), ' Measured/Predicted']);
     identityLine(gca); axis equal
     saveas(gcf, fullfile(output_directory,  [eType{ii}, '_', num2str(ncoords), '_measured_predicted.png']));
-    
-    
+
+
     switch lower(eType{ii})
         case 'adc'
             % Plot surface and points
             adc = dwiGet(dwi,'adc data image',coords);
             Q = dwiQ(dwi,coords);
             dwiPlot(dwi,'adc',adc(:,5),squeeze(Q(:,:,5)));
-            
+
             % Write out gif of surface vs measured
             gif_file = fullfile(output_directory, [ eType{ii}, '_', num2str(ncoords), '_surface.gif' ] );
-            
+
             % Turn of the axes and loop through the views
             lightH = camlight('right');
             axis('off');
@@ -93,17 +98,17 @@ for ii = 1:numel(eType)
             for ff = 1:180
                 % rotate the camera
                 camorbit(2, 0);
-                
+
                 % Rotate the light with the camera
                 lightH = camlight(lightH,'right');
-                
+
                 % Caputure the frame
                 mov(ff) = getframe(gcf);
-                
+
                 % Convert the movie frame to an image
                 im = frame2im(mov(ff));
                 [imind, cm] = rgb2ind(im, 256);
-                
+
                 % Write out the image to gif
                 if ff == 1;
                     imwrite(imind, cm, gif_file, 'gif', 'Loopcount',inf, 'delaytime',0);
