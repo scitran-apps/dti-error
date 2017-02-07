@@ -1,0 +1,94 @@
+#! /bin/bash
+#
+# Run dtiError Gear
+# Built to flywheel-v0 spec.
+#
+LOG_FILE=/flywheel/v0/output/dtiErrorLog.log
+
+(
+  CONTAINER="[scitran/dti-error]"
+  echo -e "$CONTAINER  Initiated"
+
+  # Configure the ENV
+  export LD_LIBRARY_PATH=/opt/mcr/v90/runtime/glnxa64:/opt/mcr/v90/bin/glnxa64:/opt/mcr/v90/sys/os/glnxa64:$LD_LIBRARY_PATH
+  export XAPPLRESDIR=/opt/mcr/v90/X11/app-defaults
+
+  # Set DISPLAY for xvfb
+  export DISPLAY=:1.0
+
+  # Define the start Xvfb function
+  start_xvfb() {
+    Xvfb :1 -screen 0 1920x1200x24+32 &> /dev/null &
+  }
+
+  # Configure paths
+  FLYWHEEL_BASE=/flywheel/v0
+  OUTPUT_DIR=$FLYWHEEL_BASE/output
+  INPUT_DIR=$FLYWHEEL_BASE/input
+  ZIP_DIR=$INPUT_DIR/dtiInit_Archive # Must match input from the manifest
+  WORK_DIR=$INPUT_DIR/work
+  CONFIG_FILE=${FLYWHEEL_BASE}/config.json
+
+  # Ensure there is an output directory
+  if [[ ! -d "$OUTPUT_DIR" ]]
+  then
+    echo "$CONTAINER  $OUTPUT_DIR not found!"
+    exit 1
+  fi
+
+  # Make the directories
+  mkdir ${WORK_DIR}
+
+  # Move files into work directory and do the work
+  ZIP_FILE=$(find ${ZIP_DIR} -type f -name "*.zip" | head -1)
+  unzip ${ZIP_FILE} -d ${WORK_DIR}
+
+  # Find the input directory from extracted archive
+  DTIE_INPUT_DIR=$(find ${WORK_DIR} -maxdepth 1 -type d -name "dti*" | head -1)
+
+  # Parse Config File
+  if [[ -f $CONFIG_FILE ]]; then
+    # Parse config from config.json
+    echo "Loading configuration from ${CONFIG_FILE}"
+    error_type=$(cat $CONFIG_FILE | jq -r '.config.error_type')
+    ncoords=$(cat $CONFIG_FILE | jq -r '.config.ncoords')
+    wm_prob=$(cat $CONFIG_FILE | jq -r '.config.wm_prob')
+  else
+    # Parse defaults from the manifest.json
+    CONFIG_FILE=$FLYWHEEL_BASE/manifest.json
+    echo "Loading defaults from ${CONFIG_FILE}"
+    error_type=$(cat $CONFIG_FILE | jq -r '.config.error_type.default')
+    ncoords=$(cat $CONFIG_FILE | jq -r '.config.ncoords.default')
+    wm_prob=$(cat $CONFIG_FILE | jq -r '.config.wm_prob.default')
+  fi
+
+  # Start Xvfb and pass the input arguments to AFQ execute the algorithm
+  start_xvfb && time /usr/local/bin/dtiError ${DTIE_INPUT_DIR} ${OUTPUT_DIR} ${error_type} ${ncoords} ${wm_prob}
+
+  # # Check status code and die
+  # if [[ $? !== 0 ]]; then
+  #   exit 1
+  # fi
+
+  # Xvfb occasionally hangs -- make sure that it dies
+  kill -9 %1
+
+  # Get a list of the files in the output directory
+  outputs=$(find $OUTPUT_DIR/* -maxdepth 0 -type f -name "*.png")
+
+  # If outputs exist go home happy
+  if [[ -z $outputs ]]
+  then
+    echo "$CONTAINER  FAILED: No results found in output directory... Exiting"
+    exit 1
+  else
+    # Set permissions for outputs (prevent root only r/w)
+    chmod -R 777 $OUTPUT_DIR
+
+    # End
+    echo -e "$CONTAINER  Wrote: `ls ${OUTPUT_DIR}`"
+    echo -e "$CONTAINER  Done!"
+  fi
+
+  exit 0
+)  2>&1 | tee $LOG_FILE

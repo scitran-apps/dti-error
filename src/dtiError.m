@@ -1,4 +1,4 @@
-function [err, dwi, coords] = dtiError(baseName,varargin)
+function [err, dwi, coords, predicted, measured] = dtiError(baseName,varargin)
 % Find RMSE between the measured and ADC (or dSIG) based on tensor model
 %
 %      [err, dwi, coords] = dtiError(baseName,'coords',coords)
@@ -32,12 +32,12 @@ function [err, dwi, coords] = dtiError(baseName,varargin)
 %    % [X Y Z] = meshgrid(40, 40, 40); coords = [X(:) Y(:) Z(:)];
 %
 %    err = dtiError(baseName,'coords',coords,'eType','adc');
-%    mrvNewGraphWin; 
+%    mrvNewGraphWin;
 %    hist(err,50); xlabel('\Delta ADC'); ylabel('Count')
 %    fprintf('DWI image quality %.2f (ADC-DTI method, higher better)\n',1/std(err));
 %
 %    err = dtiError(baseName,'coords',coords,'eType','dsig');
-%    mrvNewGraphWin; 
+%    mrvNewGraphWin;
 %    hist(err,50); xlabel('\Delta DSIG'); ylabel('Count')
 %    fprintf('DWI image quality %.2f (DSIG-DTI eval method, higher better)\n',1/std(err));
 %
@@ -46,7 +46,7 @@ function [err, dwi, coords] = dtiError(baseName,varargin)
 %    mrvNewGraphWin;
 %    hist(err,50); xlabel('\Delta ADC'); ylabel('Count')
 %    fprintf('DWI image quality %.2f (ADC-DTI method, higher better)\n',1/std(err));
-% 
+%
 %    err = dtiError(baseName,'wmProb',wmProb,'eType','dsig','ncoords',250);
 %    mrvNewGraphWin;
 %    hist(err,50); xlabel('\Delta DSIG'); ylabel('Count')
@@ -69,7 +69,7 @@ coords = p.Results.coords;
 
 wmProb = p.Results.wmProb;
 if ~isempty(wmProb) && ~exist(wmProb,'file')
-    error('White matter probability file %s not found',wmProb); 
+    error('White matter probability file %s not found',wmProb);
 end
 % ni = niftiRead(wmProb); niftiView(ni);
 
@@ -84,7 +84,7 @@ end
 if isempty(coords)
     if ~isempty(wmProb)
         % If there is a brain mask passed in use ncoords within the brain
-        % mask.  
+        % mask.
         ncoords = p.Results.ncoords;
 
         % We read and randomly define selected values here
@@ -92,17 +92,17 @@ if isempty(coords)
         bmask.data(bmask.data <= 180) = 0;
         bmask.data(bmask.data > 180)  = 1;
         % niftiView(bmask);
-        
+
         [i,j,k] = ind2sub(size(bmask.data),find(bmask.data == 1));
         imax = length(i);
         lst = randi(imax,ncoords,1);
         allCoords = [i,j,k];
         coords = allCoords(lst,:);
-        
+
     else
         % Not sure what to do here, yet. We might find the b=0 data, select
         % high values, and choose nCoords within that
-        disp('No coords and no wmProb.  Returning'); 
+        disp('No coords and no wmProb.  Returning');
         return;
         % Get the b=0 data and find the nCoords from the top 50% of the top
         % b values
@@ -127,19 +127,21 @@ switch eType
         % Instead, we separately calculate the predicted ADC values
         bvecs = dwiGet(dwi,'diffusion bvecs');
         adcPredicted = dtiADC(Q,bvecs);
-        
+
         % A visualization, if you like
         % dwiPlot(dwi,'adc',adc(:,5),squeeze(Q(:,:,5)));
         % mrvNewGraphWin;
         % plot(adc(:),adcPredicted(:),'o')
         % identityLine(gca); axis equal
-        
+
         % Sometimes data are drawn from just outside of the white matter
         % region and the ADC values are not valid.  This happens from time
         % to time, and we aren't worrying about it.  We just delete those
         % pixels.
         lst = ~isnan(adc);
         err = adc(lst) - adcPredicted(lst);
+        measured = adc(lst);
+        predicted = adcPredicted(lst);
 
     case 'dsig'
         % Analyze the diffusion signals in the dwi nifti file
@@ -149,7 +151,7 @@ switch eType
         % It is possible to return the predicted ADC from dwiQ, as well,
         % by a small adjustment to that function.
         Q = dwiQ(dwi,coords);
-        
+
         % Sometimes there are bad coordinates out there.  We protect you.
         nBadADCcoords = sum(isnan(Q(1,1,:)));
         if nBadADCcoords
@@ -166,16 +168,14 @@ switch eType
         S0 = dwiGet(dwi,'b0valsimage',coords);
         dsigPredicted = dwiComputeSignal(S0, bvecs, bvals, Q);
         dsigPredicted = dsigPredicted';
-        
+
         % We could use percentage error by dividing by dsig().
         err = dsig(:) - dsigPredicted(:);
-        
+        measured = dsig(:);
+        predicted = dsigPredicted(:);
+
     otherwise
         error('Unknown error type %s\n',eType);
 end
 
 end
-
-
-
-
