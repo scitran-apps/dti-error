@@ -1,7 +1,11 @@
 function [err, dwi, coords, predicted, measured] = dtiError(baseName,varargin)
-% Find RMSE between the measured and ADC (or dSIG) based on tensor model
+% Find RMSE between measured and ADC (or dSIG) based on tensor model
 %
-%      [err, dwi, coords] = dtiError(baseName,'coords',coords)
+%      [err, dwi, coords] = dtiError(baseName,...
+%                               'coords',coords,...
+%                               'eType',{'adc','dsig'}, ...
+%                               'wmProb',filename, ...
+%                               'ncoords',integer);
 %
 % Calculate the histogram of differences between dti based predictions
 % (ADC or dSig) with the actual ADC or dSig data. Larger deviations suggest
@@ -67,14 +71,15 @@ p.parse(baseName,varargin{:});
 eType  = p.Results.eType;
 coords = p.Results.coords;
 
-wmProb = p.Results.wmProb;
+% White matter probability file name given.  Check that it exists.
+wmProb = p.Results.wmProb;   
 if ~isempty(wmProb) && ~exist(wmProb,'file')
     error('White matter probability file %s not found',wmProb);
 end
 % ni = niftiRead(wmProb); niftiView(ni);
 
 if exist(baseName,'file'),     dwi = dwiLoad(baseName);
-else                           error('Diffusion data file %s not found\n');
+else,                          error('Diffusion data file %s not found\n');
 end
 % dwiPlot(dwi,'bvecs');
 
@@ -83,12 +88,13 @@ end
 % If there are coords passed in, move along
 if isempty(coords)
     if ~isempty(wmProb)
-        % If there is a brain mask passed in use ncoords within the brain
-        % mask.
+        % If there is a white matter brain mask, select ncoords within that
+        % mask 
         ncoords = p.Results.ncoords;
 
         % We read and randomly define selected values here
         bmask = niftiRead(wmProb);
+        
         bmask.data(bmask.data <= 180) = 0;
         bmask.data(bmask.data > 180)  = 1;
         % niftiView(bmask);
@@ -165,7 +171,9 @@ switch eType
         % Fix this code!
         bvecs = dwiGet(dwi,'diffusion bvecs');
         bvals = dwiGet(dwi,'diffusion bvals');
-        S0 = dwiGet(dwi,'b0valsimage',coords);
+        S0 = dwiGet(dwi,'b0 image',coords);
+        
+        S0 = mean(S0,2);  % If multiple b=0 images, use the mean
         dsigPredicted = dwiComputeSignal(S0, bvecs, bvals, Q);
         dsigPredicted = dsigPredicted';
 
