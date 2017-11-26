@@ -23,40 +23,41 @@ function [err, dwi, coords, predicted, measured] = dtiError(baseName,varargin)
 %    eType:   Error type.  Either ADC or diffusion signal (dSig)
 %    wmProb:  A full path to a brain white probability file
 %
+% LMP/BW Vistalab Team, 2016
+
 % Example:
-%
+%{
 %  To run this example, we downloaded a data set from Flywheel and put it
 %  in the local dir.  See dtiErrorNotes.m for now for how we did this.
 %
-%    dirName = 'dtiInit_03-Oct-2016_21-17-04';
-%    baseDir = fullfile(dtiErrorRootPath,'local',dirName);
-%    d = dir(fullfile(baseDir,'*aligned*.nii.gz'));
-%    baseName = fullfile(baseDir,d.name);
-%    [X Y Z] = meshgrid(30:50, 30:50, 30:50); coords = [X(:) Y(:) Z(:)];
-%    % [X Y Z] = meshgrid(40, 40, 40); coords = [X(:) Y(:) Z(:)];
-%
-%    err = dtiError(baseName,'coords',coords,'eType','adc');
-%    mrvNewGraphWin;
-%    hist(err,50); xlabel('\Delta ADC'); ylabel('Count')
-%    fprintf('DWI image quality %.2f (ADC-DTI method, higher better)\n',1/std(err));
-%
-%    err = dtiError(baseName,'coords',coords,'eType','dsig');
-%    mrvNewGraphWin;
-%    hist(err,50); xlabel('\Delta DSIG'); ylabel('Count')
-%    fprintf('DWI image quality %.2f (DSIG-DTI eval method, higher better)\n',1/std(err));
-%
-%    wmProb = fullfile(baseDir,'dti31trilin','bin','wmProb.nii.gz');
-%    err = dtiError(baseName,'wmProb',wmProb,'eType','adc','ncoords',5);
-%    mrvNewGraphWin;
-%    hist(err,50); xlabel('\Delta ADC'); ylabel('Count')
-%    fprintf('DWI image quality %.2f (ADC-DTI method, higher better)\n',1/std(err));
-%
-%    err = dtiError(baseName,'wmProb',wmProb,'eType','dsig','ncoords',250);
-%    mrvNewGraphWin;
-%    hist(err,50); xlabel('\Delta DSIG'); ylabel('Count')
-%    fprintf('DWI image quality %.2f (DSIG-DTI eval method, higher better)\n',1/std(err));
-%
-% LMP/BW Vistalab Team, 2016
+    dirName = 'dtiInit_03-Oct-2016_21-17-04';
+    baseDir = fullfile(dtiErrorRootPath,'local',dirName);
+    d = dir(fullfile(baseDir,'*aligned*.nii.gz'));
+    baseName = fullfile(baseDir,d.name);
+    [X Y Z] = meshgrid(30:50, 30:50, 30:50); coords = [X(:) Y(:) Z(:)];
+    % [X Y Z] = meshgrid(40, 40, 40); coords = [X(:) Y(:) Z(:)];
+
+    err = dtiError(baseName,'coords',coords,'eType','adc');
+    mrvNewGraphWin;
+    hist(err,50); xlabel('\Delta ADC'); ylabel('Count')
+    fprintf('DWI image quality %.2f (ADC-DTI method, higher better)\n',1/std(err));
+
+    err = dtiError(baseName,'coords',coords,'eType','dsig');
+    mrvNewGraphWin;
+    hist(err,50); xlabel('\Delta DSIG'); ylabel('Count')
+    fprintf('DWI image quality %.2f (DSIG-DTI eval method, higher better)\n',1/std(err));
+
+    wmProb = fullfile(baseDir,'dti31trilin','bin','wmProb.nii.gz');
+    err = dtiError(baseName,'wmProb',wmProb,'eType','adc','ncoords',5);
+    mrvNewGraphWin;
+    hist(err,50); xlabel('\Delta ADC'); ylabel('Count')
+    fprintf('DWI image quality %.2f (ADC-DTI method, higher better)\n',1/std(err));
+
+    err = dtiError(baseName,'wmProb',wmProb,'eType','dsig','ncoords',250);
+    mrvNewGraphWin;
+    hist(err,50); xlabel('\Delta DSIG'); ylabel('Count')
+    fprintf('DWI image quality %.2f (DSIG-DTI eval method, higher better)\n',1/std(err));
+%}
 
 %% Identify and load the dwi and metadata files
 
@@ -104,7 +105,8 @@ if isempty(coords)
         lst = randi(imax,ncoords,1);
         allCoords = [i,j,k];
         coords = allCoords(lst,:);
-
+        fprintf('Testing with %d random coords\n',size(coords,1));
+        
     else
         % Not sure what to do here, yet. We might find the b=0 data, select
         % high values, and choose nCoords within that
