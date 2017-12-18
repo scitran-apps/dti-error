@@ -26,34 +26,45 @@ function nRMSE = dtiErrorALDIT(varargin)
 % See also:  scitran.runFunction
 
 % st = scitran('vistalab');
+%{ 
+  % Upload to Flywheel
+  thisFile = which('dtiErrorALDIT.m');
+  project  = st.search('project','project label exact','ALDIT');
+  status = st.upload(thisFile,'project',idGet(project));
+%}
+
 % Example:
 %{
     project = 'ALDIT';
-    session = 'Set 2';
+    session = 'Set 1';
     dtiErrorALDIT('project',project,'session',session);
 %}
 %{
-    clear params; params.project = 'ALDIT';
+    clear params; 
+    params.project = 'ALDIT';
     params.session = 'Set 2';
     params.wmPercentile = 80; params.nSamples = 500;
-    params.scatter = false; params.histogram = false;
-    dtiErrorALDIT(params);
+    params.scatter = false; params.histogram = true;
+    RMSESet2 = dtiErrorALDIT(params);
 %}
 %{
-    project = 'ALDIT'; 
-    clear params; params.session = 'Test Site 1';
+    clear params; 
+    params.session = 'Set 1';
     params.wmPercentile = 80; params.nSamples = 500;
-    params.scatter = false; params.histogram = false;
+    params.scatter = true; params.histogram = false;
     
-    st = scitran('vistalab');
-    st.runFunction('dtiErrorALDIT.m','project',project,'params',params);
+    project  = st.search('project','project label exact','ALDIT');
+    [localFile,RMSESet3] = st.runFunction('dtiErrorALDIT.m', ...
+        'container type','project',...
+        'container id', idGet(project),...
+        'params',params);
 %}
 
 %% Start with initialization
 p = inputParser;
 
 p.addParameter('project','ALDIT',@ischar);
-p.addParameter('session','Test Site 1',@ischar);
+p.addParameter('session','Set 1',@ischar);
 p.addParameter('wmPercentile',95,@isnumeric);
 p.addParameter('nSamples',250,@isnumeric);
 p.addParameter('scatter',false,@islogical);
@@ -61,8 +72,8 @@ p.addParameter('histogram',false,@islogical);
 
 p.parse(varargin{:});
 
-project      = p.Results.project;
-session      = p.Results.session;
+projectlabel      = p.Results.project;
+sessionlabel      = p.Results.session;
 wmPercentile = p.Results.wmPercentile;
 nSamples     = p.Results.nSamples;
 scatter      = p.Results.scatter;
@@ -74,11 +85,16 @@ st = scitran('vistalab');
 %% Search for the session and acquisition
 
 % List the Diffusion acquisitions in the first session
-acquisitions = st.search('acquisitions', ...
-    'project label exact',project, ...
-    'session label contains',session,...
+acquisitions = st.search('acquisition', ...
+    'project label exact',projectlabel, ...
+    'session label exact',sessionlabel,...
     'acquisition label contains','Diffusion',...
     'summary',true);
+
+if isempty(acquisitions)
+    fprintf('No acquisitions in project %s, session %s\n',projectlabel,sessionlabel);
+    return;
+end
 
 %% Pull down the nii.gz, bvec and bval from the first acquisition
 
@@ -106,7 +122,7 @@ for ii=1:nAcquisitions
     [err, ~, ~, predicted, measured] = ...
         dtiError(dwi.files.nifti,'eType','dsig','wmProb','wmProb.nii.gz','ncoords',nSamples);
     
-    label{ii} = acquisitions{ii}.source.label;
+    label{ii} = acquisitions{ii}.acquisition.label;
     
     if histogram
         mrvNewGraphWin; hist(err,50); title(label{ii});
@@ -133,7 +149,7 @@ b = bar3(nRMSE(idx),0.3); zlabel('Normalized RMSE');
 set(b,'FaceLighting','gouraud','EdgeColor',[1 1 1])
 set(gca,'YTickLabel',label);
 view([-64,23]);
-title(session)
+title(sessionlabel)
 
 end
 
