@@ -4,12 +4,16 @@ function nRMSE = dtiErrorALDIT(varargin)
 % Syntax
 %     nRMSE = dtiErrorALDIT(...);
 %
-% Description
-%  We find and download an acquisition containing DWI data. Then we assess
-%  the noise. The graph and numerical evaluations can be compared with data
-%  from phantom measurements on other scanners.
+% Description 
+%   Analyze the diffusion weighted imaging noise from a site using
+%   dtiError. The data from multiple b-values are stored in an acquisition
+%   for each site.
+%
+%   The graph and numerical evaluations can be compared with data from
+%   phantom measurements on other scanners.
 %
 % Inputs (required)
+%  None
 %
 % Inputs (optional)
 %  project - Project label
@@ -81,6 +85,15 @@ histogram    = p.Results.histogram;
 
 %% Open the Flywheel object
 st = scitran('vistalab');
+
+% Check that the required toolboxes are on the path
+[~,valid] = st.getToolbox('aldit-toolboxes.json',...
+    'project name','ALDIT',...
+    'validate',true);
+
+if ~valid
+    error('Please install aldit-toolboxes.json toolboxes on your path'); 
+end
 
 %% Search for the session and acquisition
 
